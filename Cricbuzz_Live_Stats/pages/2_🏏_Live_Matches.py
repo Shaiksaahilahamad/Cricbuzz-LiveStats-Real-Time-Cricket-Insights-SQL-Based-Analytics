@@ -62,14 +62,34 @@ def get_matches(match_type="live"):
     try:
         check_rate_limit()
         response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        return response.json()
+        
+        # Debug information
+        st.sidebar.info(f"API Status: {response.status_code}")
+        
+        # Check for rate limiting (429 error)
+        if response.status_code == 429:
+            error_msg = f"API Rate Limit Exceeded (429). Response: {response.text}"
+            return {"error": "rate_limit", "message": error_msg, "status_code": 429}
+        
+        # Check if response is empty
+        if not response.content:
+            return {"error": "empty_response", "message": "API returned empty response", "status_code": response.status_code}
+        
+        # Check if response is valid JSON
+        try:
+            data = response.json()
+            return data
+        except ValueError as e:
+            # Response is not JSON, show what we got
+            error_msg = f"API returned non-JSON response. Status: {response.status_code}, Content: {response.text[:100]}"
+            return {"error": "invalid_json", "message": error_msg, "status_code": response.status_code}
+            
     except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching matches: {e}")
-        return None
+        error_msg = f"Request error: {e}"
+        return {"error": "request_error", "message": error_msg}
     except Exception as e:
-        st.error(f"Unexpected error: {e}")
-        return None
+        error_msg = f"Unexpected error: {e}"
+        return {"error": "unexpected_error", "message": error_msg}
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def get_detailed_scorecard(match_id):
@@ -83,18 +103,28 @@ def get_detailed_scorecard(match_id):
     try:
         check_rate_limit()
         response = requests.get(url, headers=headers, timeout=10)
+        
+        # Check for rate limiting (429 error)
+        if response.status_code == 429:
+            error_msg = f"API Rate Limit Exceeded (429). Response: {response.text}"
+            return {"error": "rate_limit", "message": error_msg}
+        
+        # Check if response is empty
+        if not response.content:
+            return {"error": "empty_response", "message": "API returned empty response"}
+            
         response.raise_for_status()
         return response.json()
     except requests.exceptions.HTTPError as e:
         if hasattr(e, 'response') and e.response.status_code == 429:
-            st.error("⚠️ API rate limit exceeded. Please wait a moment before trying again.")
-            st.info("Free RapidAPI plans have strict rate limits. Consider upgrading or waiting.")
+            error_msg = f"API Rate Limit Exceeded (429). Response: {e.response.text}"
+            return {"error": "rate_limit", "message": error_msg}
         else:
-            st.error(f"Error fetching detailed scorecard: {e}")
-        return None
+            error_msg = f"HTTP error: {e}"
+            return {"error": "http_error", "message": error_msg}
     except Exception as e:
-        st.error(f"Error fetching detailed scorecard: {e}")
-        return None
+        error_msg = f"Error: {e}"
+        return {"error": "error", "message": error_msg}
 
 def convert_timestamp(timestamp_ms):
     """Convert milliseconds timestamp to readable date"""
@@ -127,6 +157,11 @@ def display_detailed_scorecard_data(detailed_data):
     # Check if we have valid data
     if not detailed_data or not isinstance(detailed_data, dict):
         st.error("No detailed scorecard data available")
+        return
+    
+    # Check for error response
+    if detailed_data.get("error"):
+        st.error(f"Error: {detailed_data.get('message', 'Unknown error')}")
         return
     
     # Different API responses have different structures
@@ -194,7 +229,7 @@ def display_detailed_scorecard_data(detailed_data):
                 df_batting = pd.DataFrame(batting_data)
                 
                 # Display raw data first
-                st.markdown("#### 📋 Batting Data")
+                st.markdown("#### 📋 Raw Batting Data")
                 st.dataframe(df_batting[['Batsman', 'Runs', 'Balls', '4s', '6s', 'SR', 'Status']], 
                             use_container_width=True, hide_index=True)
                 
@@ -289,7 +324,7 @@ def display_detailed_scorecard_data(detailed_data):
                 df_bowling = pd.DataFrame(bowling_data)
                 
                 # Display raw data first
-                st.markdown("#### 📋 Bowling Data")
+                st.markdown("#### 📋 Raw Bowling Data")
                 st.dataframe(df_bowling[['Bowler', 'Overs', 'Maidens', 'Runs', 'Wickets', 'Economy', 'Wides']], 
                             use_container_width=True, hide_index=True)
                 
@@ -485,7 +520,11 @@ def display_match_details(match, match_index):
             detailed_data = get_detailed_scorecard(match_id)
             
             if detailed_data:
-                display_detailed_scorecard_data(detailed_data)
+                # Check for error response
+                if detailed_data.get("error"):
+                    st.error(f"Error: {detailed_data.get('message', 'Unknown error')}")
+                else:
+                    display_detailed_scorecard_data(detailed_data)
             else:
                 st.error("Could not load detailed scorecard data. Possible reasons:")
                 st.write("1. API rate limiting - please wait a few moments")
@@ -499,8 +538,24 @@ def display_match_details(match, match_index):
 def process_and_display_matches(matches_data, match_type):
     """Process the API response and display matches with filtering"""
     
+    # Check for error response
+    if matches_data and matches_data.get("error"):
+        error_type = matches_data.get("error")
+        error_msg = matches_data.get("message", "Unknown error")
+        
+        if error_type == "rate_limit":
+            st.error(f"⚠️ API Rate Limit Exceeded: {error_msg}")
+        elif error_type == "empty_response":
+            st.info("🏏 There are no matches at the moment. Please check back later.")
+        elif error_type == "invalid_json":
+            st.error(f"❌ API Error: {error_msg}")
+            st.info("This might be a temporary issue with the API. Please try again later.")
+        else:
+            st.error(f"❌ Error: {error_msg}")
+        return
+    
     if not matches_data or 'typeMatches' not in matches_data:
-        st.error("No match data available or invalid API response format")
+        st.info("🏏 There are no matches at the moment. Please check back later.")
         return
     
     # Collect all matches
@@ -547,7 +602,7 @@ def process_and_display_matches(matches_data, match_type):
     
     if not all_matches:
         if match_type.lower() == "live":
-            st.warning("No live matches currently in progress. Try checking 'Recent' or 'Upcoming' matches.")
+            st.info("🏏 There are no matches at the moment. Please check back later.")
         else:
             st.warning(f"No {match_type} matches found.")
         return
@@ -595,6 +650,13 @@ def main():
         st.info("Make sure you have RAPIDAPI_KEY and RAPIDAPI_HOST in your .env file")
         return
     
+    # Add API status info in sidebar
+    st.sidebar.subheader("API Status")
+    if os.getenv('RAPIDAPI_KEY'):
+        st.sidebar.success("✅ API Key configured")
+    else:
+        st.sidebar.error("❌ API Key missing")
+    
     # Match type selection with unique key
     match_type = st.radio(
         "Select Match Status:",
@@ -626,7 +688,7 @@ def main():
         # Process and display matches
         process_and_display_matches(matches_data, match_type)
     else:
-        st.error("Failed to load matches from API. Please check your API configuration.")
+        st.info("🏏 There are no matches at the moment. Please check back later.")
 
 if __name__ == "__main__":
     main()
