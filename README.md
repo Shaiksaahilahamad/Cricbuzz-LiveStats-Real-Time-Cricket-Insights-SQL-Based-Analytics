@@ -1,0 +1,2 @@
+# Cricbuzz-LiveStats-Real-Time-Cricket-Insights-SQL-Based-Analytics
+Cricbuzz LiveStats is a full-stack cricket analytics app that merges live data from the Cricbuzz API with a SQL backend. It offers dashboards for fans, fantasy players, and analysts, featuring live updates and SQL-driven insights. The project showcases a full pipeline: API ingestion, database storage, and interactive web visualization.
