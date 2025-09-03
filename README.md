@@ -1,8 +1,5 @@
 Cricbuzz LiveStats - Cricket Analytics Platform
-https://img.shields.io/badge/Cricket-Analytics-blue
-https://img.shields.io/badge/Python-3.10%252B-green
-https://img.shields.io/badge/Streamlit-1.28.1-red
-https://img.shields.io/badge/MySQL-8.0%252B-orange
+
 
 A comprehensive cricket analytics platform that combines real-time match data with powerful SQL-based analytics, providing cricket enthusiasts, analysts, and learners with valuable insights into the game.
 
