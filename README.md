@@ -87,7 +87,7 @@ sudo -u postgres createdb cricket_db
 Rename config.example.py to config.py
 
 Update the configuration with your settings:
-
+bash
 python
 # Database Configuration
 DB_CONFIG = {
