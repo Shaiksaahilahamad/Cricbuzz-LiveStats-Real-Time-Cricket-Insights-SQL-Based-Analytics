@@ -1,0 +1,26 @@
+this table is for the crud operations page if u need dummy data u can add but the table is complesory in order for crud operation to work 
+
+-- INSERT 10 SAMPLE RECORDS INTO crud_info TABLE
+CREATE TABLE crud_info (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    country VARCHAR(50),
+    role VARCHAR(50),
+    batting_style VARCHAR(50),
+    bowling_style VARCHAR(50),
+    date_of_birth DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO crud_info (name, country, role, batting_style, bowling_style, date_of_birth) VALUES
+('Virat Kohli', 'India', 'Batsman', 'Right-handed', 'Right-arm medium', '1988-11-05'),
+('MS Dhoni', 'India', 'Wicket-keeper', 'Right-handed', 'Right-arm medium', '1981-07-07'),
+('Rohit Sharma', 'India', 'Batsman', 'Right-handed', 'Right-arm offbreak', '1987-04-30'),
+('Jasprit Bumrah', 'India', 'Bowler', 'Right-handed', 'Right-arm fast', '1993-12-06'),
+('Ravindra Jadeja', 'India', 'All-rounder', 'Left-handed', 'Left-arm orthodox', '1988-12-06'),
+('Steve Smith', 'Australia', 'Batsman', 'Right-handed', 'Right-arm legbreak', '1989-06-02'),
+('Kane Williamson', 'New Zealand', 'Batsman', 'Right-handed', 'Right-arm offbreak', '1990-08-08'),
+('Ben Stokes', 'England', 'All-rounder', 'Left-handed', 'Right-arm fast-medium', '1991-06-04'),
+('Babar Azam', 'Pakistan', 'Batsman', 'Right-handed', 'Right-arm offbreak', '1994-10-15'),
+('David Warner', 'Australia', 'Batsman', 'Left-handed', 'Right-arm legbreak', '1986-10-27');
